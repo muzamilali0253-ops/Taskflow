@@ -5,6 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFlow – Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Dashboard upgrade styles ── */
+    .dash-welcome {
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      border-radius: 14px; padding: 24px 28px; margin-bottom: 24px; color: white;
+    }
+    .dash-welcome-left h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .dash-welcome-left p  { font-size: 13px; opacity: .8; }
+    .dash-welcome-right { font-size: 13px; opacity: .75; text-align: right; }
+    .dash-welcome-right strong { display: block; font-size: 18px; font-weight: 700; opacity: 1; }
+
+    /* Employee-only: full-width task list */
+    .employee-tasks-full { margin-top: 24px; }
+    .employee-tasks-full .card { padding: 0; }
+    .employee-tasks-full .card-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--gray-100);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .employee-tasks-full .card-header-title { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .employee-tasks-full .card-header-sub { font-size: 12px; color: var(--gray-400); }
+    .emp-task-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 24px; border-bottom: 1px solid var(--gray-100); transition: background .15s;
+    }
+    .emp-task-item:last-child { border-bottom: none; }
+    .emp-task-item:hover { background: var(--gray-50); }
+    .emp-task-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .emp-task-icon svg { width: 16px; height: 16px; }
+    .emp-task-icon.pending   { background: var(--warning-light); color: var(--warning); }
+    .emp-task-icon.in_progress { background: var(--primary-light); color: var(--primary); }
+    .emp-task-icon.completed { background: var(--success-light); color: var(--success); }
+    .emp-task-body { flex: 1; min-width: 0; }
+    .emp-task-title { font-size: 14px; font-weight: 600; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .emp-task-meta  { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .emp-task-deadline-warn { color: var(--danger); font-weight: 600; }
+
+    /* My progress ring */
+    .my-progress-card {
+      background: white; border-radius: var(--radius); border: 1px solid var(--gray-200);
+      padding: 20px 24px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 20px;
+    }
+    .progress-ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+    .progress-ring-wrap svg { transform: rotate(-90deg); }
+    .progress-ring-bg { fill: none; stroke: var(--gray-100); stroke-width: 8; }
+    .progress-ring-fill { fill: none; stroke: var(--success); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+    .progress-ring-text {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: var(--gray-900);
+    }
+    .my-progress-stats { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .my-stat { text-align: center; padding: 8px; border-radius: 8px; }
+    .my-stat-val { font-size: 20px; font-weight: 800; line-height: 1; }
+    .my-stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
+    .my-stat.pending   { background: var(--warning-light);  color: var(--warning); }
+    .my-stat.progress  { background: var(--primary-light);  color: var(--primary); }
+    .my-stat.completed { background: var(--success-light);  color: var(--success); }
+
+    /* Deadline soon banner */
+    .deadline-banner {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px;
+      padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #c2410c;
+    }
+    .deadline-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Admin/Manager two-col */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
 <div id="toast"></div>
@@ -21,50 +94,107 @@
       </div>
     </header>
     <main class="page-content">
-      <!-- Stats -->
-      <div class="stats-grid" id="statsGrid">
-        <div class="stat-card"><div class="spinner" style="margin:auto"></div></div>
-        <div class="stat-card"></div>
-        <div class="stat-card"></div>
-        <div class="stat-card"></div>
+
+      <!-- Welcome banner -->
+      <div class="dash-welcome" id="welcomeBanner">
+        <div class="dash-welcome-left">
+          <h2 id="welcomeHeading">Good day!</h2>
+          <p id="welcomeSub">Here's what's happening today.</p>
+        </div>
+        <div class="dash-welcome-right" id="welcomeDate"></div>
       </div>
-      <!-- Two-col: recent activity + my tasks -->
-      <div class="two-col">
-        <div>
-          <div class="card">
-            <div class="card-title">Recent Activity</div>
-            <div class="card-subtitle">Latest task updates across your workspace</div>
-            <div id="activityList"><div class="spinner" style="margin:auto;display:block"></div></div>
+
+      <!-- ── EMPLOYEE VIEW ── -->
+      <div id="employeeView" style="display:none">
+        <!-- Deadline warning banner -->
+        <div id="deadlineBanner" style="display:none" class="deadline-banner">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span id="deadlineBannerText"></span>
+        </div>
+
+        <!-- My progress card -->
+        <div class="my-progress-card" id="myProgressCard" style="margin-bottom:20px">
+          <div class="progress-ring-wrap">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle class="progress-ring-bg" cx="40" cy="40" r="36"/>
+              <circle class="progress-ring-fill" id="progressRingFill" cx="40" cy="40" r="36"
+                stroke-dasharray="226.2" stroke-dashoffset="226.2"/>
+            </svg>
+            <div class="progress-ring-text" id="progressRingPct">0%</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:700;color:var(--gray-900);margin-bottom:10px">My Task Progress</div>
+            <div class="my-progress-stats" id="myProgressStats">
+              <div class="my-stat pending"><div class="my-stat-val">0</div><div class="my-stat-label">Pending</div></div>
+              <div class="my-stat progress"><div class="my-stat-val">0</div><div class="my-stat-label">Active</div></div>
+              <div class="my-stat completed"><div class="my-stat-val">0</div><div class="my-stat-label">Done</div></div>
+            </div>
           </div>
         </div>
-        <div>
+
+        <!-- My tasks full width -->
+        <div class="employee-tasks-full">
           <div class="card">
-            <div class="card-title" id="myTasksTitle">My Tasks</div>
-            <div class="card-subtitle">Tasks assigned to you</div>
-            <div id="myTasksList"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-header-title">My Tasks</div>
+                <div class="card-header-sub" id="empTaskCount">Loading…</div>
+              </div>
+              <a href="tasks.html" class="btn btn-outline btn-sm">View all</a>
+            </div>
+            <div id="empTaskList"></div>
           </div>
         </div>
       </div>
 
-      <!-- Employee Progress Section (Manager & Admin only) -->
-      <div id="employeeProgressSection" style="display:none;margin-top:28px">
-        <div class="progress-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div class="card-title" style="margin-bottom:0">Employee Task Progress</div>
-            <div style="font-size:12px;color:var(--gray-400)">Live overview</div>
+      <!-- ── ADMIN / MANAGER VIEW ── -->
+      <div id="adminManagerView" style="display:none">
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card"><div class="spinner" style="margin:auto"></div></div>
+          <div class="stat-card"></div>
+          <div class="stat-card"></div>
+          <div class="stat-card"></div>
+        </div>
+
+        <!-- Two-col: recent activity + my tasks -->
+        <div class="two-col">
+          <div>
+            <div class="card">
+              <div class="card-title">Recent Activity</div>
+              <div class="card-subtitle">Latest task updates across your workspace</div>
+              <div id="activityList"><div class="spinner" style="margin:auto;display:block"></div></div>
+            </div>
           </div>
-          <div class="card-subtitle">Individual progress breakdown for each team member</div>
-          <!-- Legend -->
-          <div class="progress-legend" style="margin-bottom:16px">
-            <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--warning)"></div> Pending</div>
-            <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--primary)"></div> In Progress</div>
-            <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--success)"></div> Completed</div>
+          <div>
+            <div class="card">
+              <div class="card-title" id="myTasksTitle">My Tasks</div>
+              <div class="card-subtitle">Tasks assigned to / created by you</div>
+              <div id="myTasksList"></div>
+            </div>
           </div>
-          <div id="employeeProgressList">
-            <div style="text-align:center;padding:24px"><span class="spinner"></span></div>
+        </div>
+
+        <!-- Employee Progress Section (Manager & Admin only) -->
+        <div id="employeeProgressSection" style="display:none;margin-top:28px">
+          <div class="progress-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div class="card-title" style="margin-bottom:0">Employee Task Progress</div>
+              <div style="font-size:12px;color:var(--gray-400)">Live overview</div>
+            </div>
+            <div class="card-subtitle">Individual progress breakdown for each team member</div>
+            <div class="progress-legend" style="margin-bottom:16px">
+              <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--warning)"></div> Pending</div>
+              <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--primary)"></div> In Progress</div>
+              <div class="progress-legend-item"><div class="progress-legend-dot" style="background:var(--success)"></div> Completed</div>
+            </div>
+            <div id="employeeProgressList">
+              <div style="text-align:center;padding:24px"><span class="spinner"></span></div>
+            </div>
           </div>
         </div>
       </div>
+
     </main>
   </div>
 </div>
@@ -80,27 +210,193 @@
   initMobileMenu();
   initNotifPopup(user);
 
+  // ── Welcome banner ─────────────────────────────────────────
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  document.getElementById("welcomeHeading").textContent = `${greeting}, ${user.name.split(" ")[0]}!`;
+  document.getElementById("welcomeSub").textContent =
+    user.role === "employee" ? "Here are your tasks for today." :
+    user.role === "manager"  ? "Here's your team's task overview." :
+    "Here's the full system overview.";
+
+  const now = new Date();
+  document.getElementById("welcomeDate").innerHTML =
+    `<strong>${now.toLocaleDateString("en-US",{weekday:"long"})}</strong>${now.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}`;
+
   document.getElementById("pageTitle").textContent =
     user.role === "admin" ? "System Dashboard" :
     user.role === "manager" ? "Manager Dashboard" : "My Dashboard";
 
-  // Show employee progress for admin and manager
-  if (user.role === "admin" || user.role === "manager") {
+  // ── Route by role ──────────────────────────────────────────
+  if (user.role === "employee") {
+    document.getElementById("employeeView").style.display = "";
+    await Promise.all([loadEmployeeProgress(), loadEmployeeTasks()]);
+  } else {
+    document.getElementById("adminManagerView").style.display = "";
     document.getElementById("employeeProgressSection").style.display = "";
+    await Promise.all([loadStats(), loadActivity(), loadMyTasks(), loadEmployeeProgress()]);
   }
 
-  // ── Stats ──────────────────────────────────────────────────
+  // ── Employee: personal progress ring ──────────────────────
+  async function loadEmployeeProgress() {
+    if (user.role !== "employee") {
+      // Admin/Manager version
+      const { data: employees } = await supabase.from("users").select("id, name, role").eq("role","employee").order("name");
+      const { data: tasks }     = await supabase.from("tasks").select("id, status, assigned_to");
+      const el = document.getElementById("employeeProgressList");
+
+      if (!employees?.length) {
+        el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:14px">No employees found.</div>`;
+        return;
+      }
+
+      const progressItems = employees.map(emp => {
+        const empTasks       = tasks?.filter(t => t.assigned_to === emp.id) || [];
+        const pendingCount   = empTasks.filter(t => t.status === "pending").length;
+        const progressCount  = empTasks.filter(t => t.status === "in_progress").length;
+        const completedCount = empTasks.filter(t => t.status === "completed").length;
+        const totalCount     = empTasks.length;
+        const pendingPct     = totalCount ? Math.round((pendingCount   / totalCount) * 100) : 0;
+        const progressPct    = totalCount ? Math.round((progressCount  / totalCount) * 100) : 0;
+        const completedPct   = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+        const completionRate = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+        return { emp, pendingCount, progressCount, completedCount, totalCount, pendingPct, progressPct, completedPct, completionRate };
+      });
+
+      el.innerHTML = progressItems.map(({ emp, pendingCount, progressCount, completedCount, totalCount, pendingPct, progressPct, completedPct, completionRate }) => `
+        <div class="employee-progress-item">
+          <div class="employee-progress-header">
+            <div class="employee-progress-name">
+              <div class="employee-avatar">${initials(emp.name)}</div>
+              <div>
+                <div class="employee-name-text">${emp.name}</div>
+                <div class="employee-task-count">${totalCount} task${totalCount !== 1 ? "s" : ""} total · ${completionRate}% complete</div>
+              </div>
+            </div>
+            <div class="progress-stats">
+              <span class="progress-stat progress-stat-pending">${pendingCount} Pending</span>
+              <span class="progress-stat progress-stat-progress">${progressCount} Active</span>
+              <span class="progress-stat progress-stat-completed">${completedCount} Done</span>
+            </div>
+          </div>
+          <div class="progress-bar-container">
+            ${totalCount === 0
+              ? `<div style="width:100%;height:100%;background:var(--gray-100);border-radius:6px"></div>`
+              : `
+                ${pendingPct > 0   ? `<div class="progress-bar-segment progress-bar-pending"   style="width:${pendingPct}%"></div>` : ""}
+                ${progressPct > 0  ? `<div class="progress-bar-segment progress-bar-progress"  style="width:${progressPct}%"></div>` : ""}
+                ${completedPct > 0 ? `<div class="progress-bar-segment progress-bar-completed" style="width:${completedPct}%"></div>` : ""}
+              `
+            }
+          </div>
+        </div>
+      `).join("");
+      return;
+    }
+
+    // Employee personal progress ring
+    const { data: myTasks } = await supabase.from("tasks").select("status").eq("assigned_to", user.id);
+    const total     = myTasks?.length || 0;
+    const pending   = myTasks?.filter(t => t.status === "pending").length || 0;
+    const inProg    = myTasks?.filter(t => t.status === "in_progress").length || 0;
+    const completed = myTasks?.filter(t => t.status === "completed").length || 0;
+    const pct       = total ? Math.round((completed / total) * 100) : 0;
+
+    // Update ring
+    const circumference = 226.2;
+    const offset = circumference - (pct / 100) * circumference;
+    const ring = document.getElementById("progressRingFill");
+    if (ring) { ring.style.strokeDashoffset = offset; }
+    const pctEl = document.getElementById("progressRingPct");
+    if (pctEl) pctEl.textContent = pct + "%";
+
+    // Update stats
+    document.getElementById("myProgressStats").innerHTML = `
+      <div class="my-stat pending"><div class="my-stat-val">${pending}</div><div class="my-stat-label">Pending</div></div>
+      <div class="my-stat progress"><div class="my-stat-val">${inProg}</div><div class="my-stat-label">Active</div></div>
+      <div class="my-stat completed"><div class="my-stat-val">${completed}</div><div class="my-stat-label">Done</div></div>
+    `;
+  }
+
+  // ── Employee: full task list ───────────────────────────────
+  async function loadEmployeeTasks() {
+    const { data: tasks } = await supabase
+      .from("tasks")
+      .select("id, title, description, status, deadline")
+      .eq("assigned_to", user.id)
+      .order("deadline", { ascending: true, nullsFirst: false });
+
+    const list  = document.getElementById("empTaskList");
+    const count = document.getElementById("empTaskCount");
+    const banner = document.getElementById("deadlineBanner");
+
+    if (!tasks || tasks.length === 0) {
+      count.textContent = "No tasks assigned yet";
+      list.innerHTML = `
+        <div class="empty">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <div class="empty-title">No tasks yet</div>
+          <div class="empty-text">You have no tasks assigned to you right now.</div>
+        </div>`;
+      return;
+    }
+
+    // Check for tasks due within 2 days
+    const today = new Date(); today.setHours(0,0,0,0);
+    const soonTasks = tasks.filter(t => {
+      if (!t.deadline || t.status === "completed") return false;
+      const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
+      const diff = Math.floor((dl - today) / 86400000);
+      return diff <= 2 && diff >= 0;
+    });
+    if (soonTasks.length > 0) {
+      banner.style.display = "flex";
+      document.getElementById("deadlineBannerText").textContent =
+        soonTasks.length === 1
+          ? `"${soonTasks[0].title}" is due ${soonTasks[0].deadline === today.toISOString().split("T")[0] ? "today" : "soon"}!`
+          : `${soonTasks.length} tasks are due within the next 2 days.`;
+    }
+
+    const active    = tasks.filter(t => t.status !== "completed").length;
+    const completed = tasks.filter(t => t.status === "completed").length;
+    count.textContent = `${tasks.length} total · ${active} active · ${completed} done`;
+
+    const taskIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`;
+
+    list.innerHTML = tasks.map(t => {
+      let deadlineMeta = t.deadline ? `Due ${formatDate(t.deadline)}` : "No deadline";
+      let deadlineClass = "";
+      if (t.deadline && t.status !== "completed") {
+        const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
+        const diff = Math.floor((dl - today) / 86400000);
+        if (diff < 0)  { deadlineMeta = "Overdue!"; deadlineClass = "emp-task-deadline-warn"; }
+        else if (diff === 0) { deadlineMeta = "Due today!"; deadlineClass = "emp-task-deadline-warn"; }
+        else if (diff <= 2)  { deadlineMeta = `Due in ${diff} day${diff !== 1 ? "s" : ""}`; deadlineClass = "emp-task-deadline-warn"; }
+      }
+      return `
+        <div class="emp-task-item">
+          <div class="emp-task-icon ${t.status}">${taskIcon}</div>
+          <div class="emp-task-body">
+            <div class="emp-task-title">${t.title}</div>
+            <div class="emp-task-meta ${deadlineClass}">${deadlineMeta}</div>
+          </div>
+          ${statusBadge(t.status)}
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ── Admin/Manager: Stats ───────────────────────────────────
   async function loadStats() {
     const grid = document.getElementById("statsGrid");
-
-    const { count: total }     = await supabase.from("tasks").select("id", { count: "exact", head: true });
-    const { count: pending }   = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "pending");
-    const { count: progress }  = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "in_progress");
-    const { count: completed } = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "completed");
+    const { count: total }     = await supabase.from("tasks").select("id", { count:"exact", head:true });
+    const { count: pending }   = await supabase.from("tasks").select("id", { count:"exact", head:true }).eq("status","pending");
+    const { count: progress }  = await supabase.from("tasks").select("id", { count:"exact", head:true }).eq("status","in_progress");
+    const { count: completed } = await supabase.from("tasks").select("id", { count:"exact", head:true }).eq("status","completed");
 
     let extra = "";
     if (user.role === "admin") {
-      const { count: users } = await supabase.from("users").select("id", { count: "exact", head: true });
+      const { count: users } = await supabase.from("users").select("id", { count:"exact", head:true });
       extra = `<div class="stat-card stat-blue">
         <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
         <div class="stat-label">Total Users</div>
@@ -111,29 +407,25 @@
     grid.innerHTML = `
       <div class="stat-card stat-blue">
         <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-        <div class="stat-label">Total Tasks</div>
-        <div class="stat-value">${total}</div>
+        <div class="stat-label">Total Tasks</div><div class="stat-value">${total}</div>
       </div>
       <div class="stat-card stat-yellow">
         <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-        <div class="stat-label">Pending</div>
-        <div class="stat-value">${pending}</div>
+        <div class="stat-label">Pending</div><div class="stat-value">${pending}</div>
       </div>
       <div class="stat-card stat-blue">
         <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-        <div class="stat-label">In Progress</div>
-        <div class="stat-value">${progress}</div>
+        <div class="stat-label">In Progress</div><div class="stat-value">${progress}</div>
       </div>
       <div class="stat-card stat-green">
         <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-        <div class="stat-label">Completed</div>
-        <div class="stat-value">${completed}</div>
+        <div class="stat-label">Completed</div><div class="stat-value">${completed}</div>
       </div>
       ${extra}
     `;
   }
 
-  // ── Recent activity ────────────────────────────────────────
+  // ── Admin/Manager: Recent activity ────────────────────────
   async function loadActivity() {
     const { data: tasks } = await supabase
       .from("tasks")
@@ -160,11 +452,10 @@
     `).join("");
   }
 
-  // ── My tasks ───────────────────────────────────────────────
+  // ── Admin/Manager: My tasks ────────────────────────────────
   async function loadMyTasks() {
     let query = supabase.from("tasks").select("id, title, status, deadline").order("created_at", { ascending: false }).limit(5);
-    if (user.role === "employee") query = query.eq("assigned_to", user.id);
-    else if (user.role === "manager") query = query.eq("assigned_by", user.id);
+    if (user.role === "manager") query = query.eq("assigned_by", user.id);
 
     const { data: tasks } = await query;
     const el = document.getElementById("myTasksList");
@@ -184,78 +475,6 @@
       </div>
     `).join("") + `<a href="tasks.html" style="display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--primary);font-weight:600;text-decoration:none">View all tasks →</a>`;
   }
-
-  // ── Employee Progress (Manager & Admin) ────────────────────
-  async function loadEmployeeProgress() {
-    if (user.role === "employee") return;
-
-    // Get all employees
-    const { data: employees } = await supabase
-      .from("users")
-      .select("id, name, role")
-      .eq("role", "employee")
-      .order("name");
-
-    // Get all tasks with assignment info
-    const { data: tasks } = await supabase
-      .from("tasks")
-      .select("id, status, assigned_to");
-
-    const el = document.getElementById("employeeProgressList");
-
-    if (!employees || employees.length === 0) {
-      el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:14px">No employees found.</div>`;
-      return;
-    }
-
-    // Calculate per-employee stats
-    const progressItems = employees.map(emp => {
-      const empTasks = tasks?.filter(t => t.assigned_to === emp.id) || [];
-      const pendingCount   = empTasks.filter(t => t.status === "pending").length;
-      const progressCount  = empTasks.filter(t => t.status === "in_progress").length;
-      const completedCount = empTasks.filter(t => t.status === "completed").length;
-      const totalCount     = empTasks.length;
-
-      const pendingPct   = totalCount ? Math.round((pendingCount / totalCount) * 100) : 0;
-      const progressPct  = totalCount ? Math.round((progressCount / totalCount) * 100) : 0;
-      const completedPct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
-
-      const completionRate = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
-
-      return { emp, pendingCount, progressCount, completedCount, totalCount, pendingPct, progressPct, completedPct, completionRate };
-    });
-
-    el.innerHTML = progressItems.map(({ emp, pendingCount, progressCount, completedCount, totalCount, pendingPct, progressPct, completedPct, completionRate }) => `
-      <div class="employee-progress-item">
-        <div class="employee-progress-header">
-          <div class="employee-progress-name">
-            <div class="employee-avatar">${initials(emp.name)}</div>
-            <div>
-              <div class="employee-name-text">${emp.name}</div>
-              <div class="employee-task-count">${totalCount} task${totalCount !== 1 ? "s" : ""} total · ${completionRate}% complete</div>
-            </div>
-          </div>
-          <div class="progress-stats">
-            <span class="progress-stat progress-stat-pending">${pendingCount} Pending</span>
-            <span class="progress-stat progress-stat-progress">${progressCount} Active</span>
-            <span class="progress-stat progress-stat-completed">${completedCount} Done</span>
-          </div>
-        </div>
-        <div class="progress-bar-container">
-          ${totalCount === 0
-            ? `<div style="width:100%;height:100%;background:var(--gray-100);border-radius:6px"></div>`
-            : `
-              ${pendingPct > 0   ? `<div class="progress-bar-segment progress-bar-pending"   style="width:${pendingPct}%"></div>` : ""}
-              ${progressPct > 0  ? `<div class="progress-bar-segment progress-bar-progress"  style="width:${progressPct}%"></div>` : ""}
-              ${completedPct > 0 ? `<div class="progress-bar-segment progress-bar-completed" style="width:${completedPct}%"></div>` : ""}
-            `
-          }
-        </div>
-      </div>
-    `).join("");
-  }
-
-  await Promise.all([loadStats(), loadActivity(), loadMyTasks(), loadEmployeeProgress()]);
 </script>
 </body>
 </html>
