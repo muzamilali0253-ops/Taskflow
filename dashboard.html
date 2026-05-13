@@ -532,7 +532,7 @@
       .from("tasks")
       .select("id, title, description, status, deadline")
       .eq("assigned_to", user.id)
-      .order("deadline", { ascending: true, nullsFirst: false });
+      .order("deadline", { ascending: true});
 
     const list  = document.getElementById("empTaskList");
     const count = document.getElementById("empTaskCount");
