@@ -440,6 +440,9 @@
     user.role === "manager" ? "Manager Dashboard" : "My Dashboard";
 
   // ── Route by role ──────────────────────────────────────────
+  // FIX: allEmpTasks declared here so it's accessible before loadEmployeeTasks runs
+  let allEmpTasks = [];
+
   if (user.role === "employee") {
     document.getElementById("employeeView").style.display = "";
     await Promise.all([loadEmployeeProgress(), loadEmployeeTasks()]);
@@ -526,14 +529,12 @@
   }
 
   // ── Employee: task list ────────────────────────────────────
-  let allEmpTasks = [];
   async function loadEmployeeTasks() {
     const list  = document.getElementById("empTaskList");
     const count = document.getElementById("empTaskCount");
     const banner = document.getElementById("deadlineBanner");
 
     try {
-      // Show loading state
       list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gray-400)">Loading tasks...</div>`;
 
       const { data: tasks, error } = await supabase
@@ -542,7 +543,6 @@
         .eq("assigned_to", user.id)
         .order("deadline", { ascending: true });
 
-      // Critical: Check for Supabase errors!
       if (error) {
         console.error("Supabase error:", error);
         throw error;
