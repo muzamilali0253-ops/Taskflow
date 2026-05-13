@@ -525,52 +525,73 @@
     if (pctEl) pctEl.textContent = pct + "%";
   }
 
-  // ── Employee: task list ────────────────────────────────────
+// ── Employee: task list ────────────────────────────────────
   let allEmpTasks = [];
+  
   async function loadEmployeeTasks() {
-    const { data: tasks } = await supabase
-      .from("tasks")
-      .select("id, title, description, status, deadline")
-      .eq("assigned_to", user.id)
-      .order("deadline", { ascending: true});
-
     const list  = document.getElementById("empTaskList");
     const count = document.getElementById("empTaskCount");
     const banner = document.getElementById("deadlineBanner");
 
-    if (!tasks || tasks.length === 0) {
-      count.textContent = "No tasks assigned yet";
-      list.innerHTML = `<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" style="width:52px;height:52px;margin:0 auto 14px;display:block;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div class="empty-title">No tasks yet</div><div class="empty-text">You have no tasks assigned.</div></div>`;
-      return;
+    try {
+      // Show loading state
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gray-400)">Loading tasks...</div>`;
+
+      const { data: tasks, error } = await supabase
+        .from("tasks")
+        .select("id, title, description, status, deadline")
+        .eq("assigned_to", user.id)
+        .order("deadline", { ascending: true });
+
+      // Check for Supabase errors
+      if (error) {
+        throw error;
+      }
+
+      if (!tasks || tasks.length === 0) {
+        count.textContent = "No tasks assigned yet";
+        list.innerHTML = `<div class="empty"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" style="width:52px;height:52px;margin:0 auto 14px;display:block;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div class="empty-title">No tasks yet</div><div class="empty-text">You have no tasks assigned.</div></div>`;
+        banner.style.display = "none";
+        return;
+      }
+
+      allEmpTasks = tasks;
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const soonTasks = tasks.filter(t => {
+        if (!t.deadline || t.status === "completed") return false;
+        const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
+        const diff = Math.floor((dl - today) / 86400000);
+        return diff <= 2 && diff >= 0;
+      });
+
+      if (soonTasks.length > 0) {
+        banner.style.display = "flex";
+        document.getElementById("deadlineBannerText").textContent =
+          soonTasks.length === 1
+            ? `"${soonTasks[0].title}" is due ${soonTasks[0].deadline === today.toISOString().split("T")[0] ? "today" : "soon"}!`
+            : `${soonTasks.length} tasks are due within the next 2 days.`;
+      } else {
+        banner.style.display = "none";
+      }
+
+      const active    = tasks.filter(t => t.status !== "completed").length;
+      const completed = tasks.filter(t => t.status === "completed").length;
+      count.textContent = `${tasks.length} total · ${active} active · ${completed} done`;
+
+      renderEmpTasks(tasks);
+
+    } catch (error) {
+      console.error("Error loading tasks:", error);
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:#ef4444;font-size:14px">❌ Error loading tasks. Please refresh the page.</div>`;
+      count.textContent = "Error loading tasks";
     }
-
-    allEmpTasks = tasks;
-
-    const today = new Date(); today.setHours(0,0,0,0);
-    const soonTasks = tasks.filter(t => {
-      if (!t.deadline || t.status === "completed") return false;
-      const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
-      const diff = Math.floor((dl - today) / 86400000);
-      return diff <= 2 && diff >= 0;
-    });
-    if (soonTasks.length > 0) {
-      banner.style.display = "flex";
-      document.getElementById("deadlineBannerText").textContent =
-        soonTasks.length === 1
-          ? `"${soonTasks[0].title}" is due ${soonTasks[0].deadline === today.toISOString().split("T")[0] ? "today" : "soon"}!`
-          : `${soonTasks.length} tasks are due within the next 2 days.`;
-    }
-
-    const active    = tasks.filter(t => t.status !== "completed").length;
-    const completed = tasks.filter(t => t.status === "completed").length;
-    count.textContent = `${tasks.length} total · ${active} active · ${completed} done`;
-
-    renderEmpTasks(tasks);
   }
 
   function renderEmpTasks(tasks) {
     const list = document.getElementById("empTaskList");
     const today = new Date(); today.setHours(0,0,0,0);
+    
     const taskIcon = (status) => {
       if (status === "completed") return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
       if (status === "in_progress") return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
@@ -585,6 +606,7 @@
     list.innerHTML = tasks.map(t => {
       let deadlineMeta = t.deadline ? `Due ${formatDate(t.deadline)}` : "No deadline";
       let deadlineClass = "";
+      
       if (t.deadline && t.status !== "completed") {
         const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
         const diff = Math.floor((dl - today) / 86400000);
@@ -592,6 +614,7 @@
         else if (diff === 0) { deadlineMeta = "Due today!"; deadlineClass = "emp-task-deadline-warn"; }
         else if (diff <= 2)  { deadlineMeta = `Due in ${diff} day${diff!==1?"s":""}`; deadlineClass = "emp-task-deadline-warn"; }
       }
+      
       return `
         <div class="emp-task-item">
           <div class="emp-task-icon ${t.status}">${taskIcon(t.status)}</div>
@@ -614,7 +637,6 @@
       renderEmpTasks(f === "all" ? allEmpTasks : allEmpTasks.filter(t => t.status === f));
     });
   }
-
   // ── Admin/Manager: Stats ───────────────────────────────────
   async function loadStats() {
     const grid = document.getElementById("statsGrid");
