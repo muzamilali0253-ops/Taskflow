@@ -91,6 +91,9 @@
             <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
+          <select id="filterAssignee" style="width:160px;padding:10px 12px;display:none">
+            <option value="">All employees</option>
+          </select>
         </div>
         <div>
           <button class="btn btn-primary hidden" id="newTaskBtn" onclick="openModal()">
@@ -142,6 +145,14 @@
     const { data: employees } = await supabase.from("users").select("id,name").in("role", ["employee","manager"]);
     const sel = document.getElementById("taskAssignee");
     employees?.forEach(e => { const o = new Option(e.name, e.id); sel.appendChild(o); });
+
+    // Populate + show the Assigned To filter dropdown
+    const filterAssignee = document.getElementById("filterAssignee");
+    filterAssignee.style.display = "";
+    employees?.forEach(e => {
+      const o = new Option(e.name, e.id);
+      filterAssignee.appendChild(o);
+    });
   } else {
     document.getElementById("assigneeGroup").style.display = "none";
   }
@@ -175,7 +186,7 @@
       <tr>
         <td>
           <div style="font-weight:600;color:var(--gray-900)">${t.title}</div>
-          ${t.description ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.description}</div>` : ""}
+          ${t.description ? `<div style="font-size:12px;color:var(--gray-500);margin-top:4px;max-width:400px;line-height:1.4;word-wrap:break-word;white-space:pre-wrap">${escapeHtml(t.description)}</div>` : ""}
         </td>
         <td>
           ${user.role === "employee"
@@ -201,18 +212,33 @@
     `).join("");
   }
 
+  // HTML escape function for security
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+  }
+
   // ── Filters ────────────────────────────────────────────────
   function applyFilters() {
     const q   = document.getElementById("searchInput").value.toLowerCase();
     const st  = document.getElementById("filterStatus").value;
+    const assignee = document.getElementById("filterAssignee").value;
     const filtered = window.allTasks.filter(t =>
       (!q  || t.title.toLowerCase().includes(q) || (t.description||"").toLowerCase().includes(q)) &&
-      (!st || t.status === st)
+      (!st || t.status === st) &&
+      (!assignee || t.assigned_to?.id === assignee)
     );
     renderTasks(filtered);
   }
   document.getElementById("searchInput").addEventListener("input", applyFilters);
   document.getElementById("filterStatus").addEventListener("change", applyFilters);
+  document.getElementById("filterAssignee").addEventListener("change", applyFilters);
 
   // ── Modal helpers ──────────────────────────────────────────
   window.openModal  = (task = null) => {
@@ -300,7 +326,7 @@
     const { data: files } = await supabase.from("files").select("*").eq("task_id", taskId);
     const el = document.getElementById("fileList");
     el.innerHTML = files?.length
-      ? files.map(f => `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100)"><a href="${f.file_url}" target="_blank" style="color:var(--primary);font-size:13px">${f.file_url.split("/").pop()}</a></div>`).join("")
+      ? files.map(f => `<div style="padding:8px 0;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center"><a href="${f.file_url}" target="_blank" download style="color:var(--primary);font-size:13px;text-decoration:none;flex:1">${f.file_url.split("/").pop()}</a><button class="btn btn-sm btn-outline" onclick="deleteFile('${f.id}')">Delete</button></div>`).join("")
       : "<div style='color:var(--gray-400)'>No files attached yet.</div>";
   };
   window.closeFileModal = () => document.getElementById("fileModal").classList.remove("open");
@@ -322,6 +348,15 @@
 
     toast("File uploaded.");
     btn.disabled = false; btn.textContent = "Upload";
+    document.getElementById("fileInput").value = "";
+    openFileModal(taskId);
+  };
+
+  window.deleteFile = async (fileId) => {
+    if (!confirm("Delete this file?")) return;
+    await supabase.from("files").delete().eq("id", fileId);
+    toast("File deleted.");
+    const taskId = document.getElementById("fileTaskId").value;
     openFileModal(taskId);
   };
 
