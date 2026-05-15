@@ -29,6 +29,11 @@
   </div>
 </div>
 
+<!-- Hidden audio element for notification tone -->
+<audio id="notificationAudio" preload="auto">
+  <source src="data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==" type="audio/wav">
+</audio>
+
 <script type="module">
   import { supabase } from "./supabase.js";
   import { requireAuth, buildSidebar, initMobileMenu, initNotifPopup, timeAgo, toast } from "./app.js";
@@ -38,6 +43,40 @@
   buildSidebar(user, "notifications.html");
   initMobileMenu();
   initNotifPopup(user);
+
+  // Create notification sound (simple beep tone)
+  function createNotificationSound() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    // Create a simple pleasant notification tone
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.setValueAtTime(600, now + 0.1);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+    osc.start(now);
+    osc.stop(now + 0.5);
+  }
+
+  // Play notification sound
+  window.playNotificationSound = () => {
+    try {
+      createNotificationSound();
+    } catch (e) {
+      console.log("Notification sound: ", e.message);
+    }
+  };
 
   async function load() {
     const { data } = await supabase
@@ -83,7 +122,7 @@
     load();
   };
 
-  // Realtime: auto-reload when new notification arrives
+  // Realtime: auto-reload when new notification arrives and play sound
   supabase
     .channel(`notif-page-${user.id}`)
     .on("postgres_changes", {
@@ -91,7 +130,10 @@
       schema: "public",
       table: "notifications",
       filter: `user_id=eq.${user.id}`
-    }, () => load())
+    }, () => {
+      playNotificationSound();
+      load();
+    })
     .subscribe();
 
   load();
