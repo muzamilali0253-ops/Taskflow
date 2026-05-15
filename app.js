@@ -45,6 +45,37 @@ export function roleBadge(role) {
 }
 
 // ────────────────────────────────────────────────────────────
+// Notification Sound
+// ────────────────────────────────────────────────────────────
+export function playNotificationSound() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    // Create a pleasant notification tone
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.setValueAtTime(600, now + 0.1);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+    osc.start(now);
+    osc.stop(now + 0.5);
+  } catch (e) {
+    console.log("Notification sound error: ", e.message);
+  }
+}
+
+// ────────────────────────────────────────────────────────────
 // Auth helpers
 // ────────────────────────────────────────────────────────────
 export async function getCurrentUser() {
@@ -173,6 +204,7 @@ export function initNotifPopup(user) {
       filter: `user_id=eq.${user.id}`
     }, (payload) => {
       showNotifPopup(payload.new.message, "notification");
+      playNotificationSound();
       // Update badge count
       loadNotifBadgeRealtime();
     })
