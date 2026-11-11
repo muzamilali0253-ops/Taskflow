@@ -13,6 +13,12 @@ export function toast(msg, type = "success") {
   setTimeout(() => el.remove(), 3500);
 }
 
+export function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 export function formatDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -117,6 +123,7 @@ export function buildSidebar(user, activePage) {
       { href: "groupchat.html", icon: groupChatIcon(), label: "Group Chat" },
       { href: "notifications.html", icon: bellIcon(), label: "Notifications", badge: true },
       { href: "reports.html", icon: reportIcon(), label: "Reports" },
+      { href: "performance.html", icon: perfIcon(), label: "Performance" },
     ],
     manager: [
       { href: "dashboard.html", icon: gridIcon(), label: "Dashboard" },
@@ -125,6 +132,7 @@ export function buildSidebar(user, activePage) {
       { href: "groupchat.html", icon: groupChatIcon(), label: "Group Chat" },
       { href: "notifications.html", icon: bellIcon(), label: "Notifications", badge: true },
       { href: "reports.html", icon: reportIcon(), label: "Reports" },
+      { href: "performance.html", icon: perfIcon(), label: "Performance" },
     ],
     employee: [
       { href: "dashboard.html", icon: gridIcon(), label: "Dashboard" },
@@ -266,3 +274,4 @@ function groupChatIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill=
 function bellIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>`; }
 function reportIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`; }
 function logoutIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>`; }
+function perfIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>`; }
