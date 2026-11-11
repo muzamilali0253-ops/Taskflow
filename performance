@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team Performance Dashboard · TaskFlow</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0a0f1d;--bg2:#17203a;--card:rgba(255,255,255,.065);--bd:rgba(255,255,255,.13);--tx:#f1f4ff;--mut:#9ba7c9;--o:#f47a20;--g:#8cc63f;--b:#38bdf8;--y:#fbbf24;--sh:rgba(0,0,0,.5)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f5fa;--bg2:#e3e8f4;--card:rgba(255,255,255,.82);--bd:rgba(20,30,70,.13);--tx:#14193a;--mut:#5a6486;--sh:rgba(40,60,120,.2)}}
+:root[data-theme="light"]{--bg:#f3f5fa;--bg2:#e3e8f4;--card:rgba(255,255,255,.82);--bd:rgba(20,30,70,.13);--tx:#14193a;--mut:#5a6486;--sh:rgba(40,60,120,.2)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--tx);background:radial-gradient(900px 500px at 8% -10%,rgba(244,122,32,.18),transparent),radial-gradient(900px 500px at 100% 0,rgba(140,198,63,.15),transparent),linear-gradient(var(--bg2),var(--bg));background-attachment:fixed;min-height:100vh;padding:18px}
+.w{max-width:1220px;margin:auto}
+header{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;margin-bottom:16px}
+.br{display:flex;align-items:center;gap:14px}
+.logo{width:74px;height:74px;border-radius:50%;box-shadow:0 10px 26px var(--sh),0 0 0 3px rgba(255,255,255,.5);animation:fl 4s ease-in-out infinite;background:#fff}
+@keyframes fl{50%{transform:translateY(-5px) rotateY(12deg)}}
+h1{margin:0;font-size:24px;letter-spacing:.2px}h1 span{background:linear-gradient(90deg,var(--o),var(--g));-webkit-background-clip:text;background-clip:text;color:transparent}
+.s{color:var(--mut);font-size:12px}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:7px 11px}
+button{cursor:pointer;transition:.2s}button:hover{transform:translateY(-1px)}select option{color:#111}
+.pri{background:linear-gradient(90deg,var(--o),#ff9a4d);color:#fff;border:0;font-weight:600}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+nav button{white-space:nowrap}#yb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}#yb button.on,nav button.on{background:linear-gradient(90deg,var(--o),var(--g));color:#fff;border:0;transform:translateY(-2px);box-shadow:0 8px 20px rgba(244,122,32,.4)}
+.g{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));perspective:1000px;margin-bottom:14px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:16px;backdrop-filter:blur(14px);box-shadow:0 16px 38px var(--sh);transition:transform .15s ease-out;animation:up .6s both;min-width:0;position:relative}
+@keyframes up{from{opacity:0;transform:translateY(20px) rotateX(16deg)}to{opacity:1}}
+.k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.09em}.v{font-size:32px;font-weight:700;margin-top:4px}
+.kc::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:3px;border-radius:3px;background:var(--ac)}
+h3{margin:0 0 10px;font-size:15px}
+.row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}.row>.c{flex:1 1 360px}
+.sc{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:6px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mut)}
+td input,td select{width:100%;padding:5px 7px}.hm td{text-align:center;min-width:44px;font-weight:600}
+.add,.cf{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.add input{flex:1;min-width:180px}
+.rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;text-align:center}
+.rings svg{width:100%;max-width:110px}.rings .n{font-size:11.5px;margin-top:2px}
+.lg{font-size:11px;color:var(--mut);margin-top:6px}
+.ol{display:flex;gap:6px;margin:5px 0}.ol input{flex:1}
+dialog{max-height:90vh;overflow:auto;background:var(--bg2);color:var(--tx);border:1px solid var(--bd);border-radius:16px;max-width:560px;width:92%}
+textarea{width:100%;height:150px}
+@media(prefers-reduced-motion:reduce){.c,.logo{animation:none}}
+
+/* ===== TaskFlow link additions ===== */
+a.bl{display:inline-block;text-decoration:none;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:7px 11px;transition:.2s}
+a.bl:hover{transform:translateY(-1px)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.tm{background:var(--bg2);color:var(--tx);border:1px solid var(--bd);border-left:4px solid var(--g);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 10px 26px var(--sh)}
+.tm.bad{border-left-color:#ef4444}
+.src{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block}
+.src.self{background:rgba(167,139,250,.2);color:#a78bfa}.src.asg{background:rgba(56,189,248,.16);color:var(--b)}
+.dl.warn{color:#f87171;font-weight:600}
+.td{font-weight:600}.tds{font-size:11.5px;color:var(--mut);margin-top:2px;max-width:420px;white-space:normal}
+.more{display:block;margin:10px auto 0}
+.err{color:#f87171}
+
+</style>
+</head>
+<body>
+<div class="w">
+<header><div class="br"><img class="logo" alt="Six-B logo" src="six-b-logo.png" onerror="this.style.display='none'">
+<div><h1 id="ttl">Team Performance</h1><div class="s" id="sub"></div></div></div>
+<div><span class="s" id="sy" style="margin-right:8px">Loading…</span><a class="bl" href="dashboard.html">← TaskFlow</a> <button id="th">Theme</button></div></header>
+<div id="yb"></div><nav id="nav"></nav><main id="m"><div class="c">TaskFlow se data load ho raha hai…</div></main>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { supabase } from "./supabase.js";
+import { requireAuth, escapeHtml as E } from "./app.js";
+
+// Only admin / manager can open this page (others are sent back to their dashboard)
+const user = await requireAuth(["admin", "manager"]);
+if (!user) throw new Error("Not allowed");
+
+const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const ST = ["Done","In Progress","Pending"];
+const SC = { Done:"var(--g)", "In Progress":"var(--b)", Pending:"var(--y)" };
+const DB2UI = { completed:"Done", in_progress:"In Progress", pending:"Pending" };
+const UI2DB = { "Done":"completed", "In Progress":"in_progress", "Pending":"pending" };
+const $ = s => document.querySelector(s);
+
+// ── State ──────────────────────────────────────────────────
+let D = { T: [], off: [], byId: new Map(), sig: "" };
+let yr = new Date().getFullYear(), cur = -1;       // year, month (-1 = full year)
+let fo = "All", fst = "All", fsrc = "All", logLimit = 100;
+let busy = false;
+
+// ── Helpers ────────────────────────────────────────────────
+function toast(msg, bad) {
+  const el = document.createElement("div");
+  el.className = "tm" + (bad ? " bad" : ""); el.textContent = msg;
+  $("#toast").appendChild(el); setTimeout(() => el.remove(), 3500);
+}
+function localToday() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${MN[m - 1]} ${d}, ${y}`;
+}
+function sy(msg, bad) { const e = $("#sy"); if (e) { e.textContent = msg; e.style.color = bad ? "var(--o)" : "var(--mut)"; } }
+
+function st(l) {
+  const n = l.length, d = l.filter(t => t.s === "Done").length, p = l.filter(t => t.s === "In Progress").length;
+  return { n, d, p, w: n - d - p, pc: n ? Math.round(d * 100 / n) : 0 };
+}
+const Y   = () => D.T.filter(t => t.y === yr);
+const sel = () => Y().filter(t => cur < 0 || t.m === cur);
+const isOverdue = t => !!t.deadline && t.s !== "Done" && t.deadline < localToday();
+
+// ── Load from TaskFlow (Supabase) ──────────────────────────
+async function fetchTasks() {
+  const rows = [], PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase.from("tasks")
+      .select("id, title, description, status, deadline, created_at, assigned_to(id,name), assigned_by(id,name)")
+      .order("created_at", { ascending: false }).order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return rows;
+}
+
+async function load(quiet) {
+  try {
+    const [rows, usersRes] = await Promise.all([
+      fetchTasks(),
+      supabase.from("users").select("id, name, role").order("name")
+    ]);
+    if (usersRes.error) throw usersRes.error;
+
+    const T = rows.map(r => {
+      const d = new Date(r.created_at);
+      return {
+        id: r.id, title: r.title, desc: r.description || "",
+        s: DB2UI[r.status] || "Pending",
+        y: d.getFullYear(), m: d.getMonth(),
+        o: r.assigned_to?.id || "", on: r.assigned_to?.name || "Unassigned",
+        by: r.assigned_by?.name || "",
+        self: !!r.assigned_by?.id && r.assigned_by.id === r.assigned_to?.id,
+        deadline: r.deadline || ""
+      };
+    });
+
+    // Officers = all employees + anyone else who has tasks
+    const off = new Map();
+    (usersRes.data || []).filter(u => u.role === "employee").forEach(u => off.set(u.id, u.name));
+    T.forEach(t => { if (t.o && !off.has(t.o)) off.set(t.o, t.on); });
+    const offList = [...off.entries()].map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const sig = T.map(t => t.id + t.s + t.o + t.title).join("|") + "#" + offList.map(o => o.id + o.name).join("|");
+    const changed = sig !== D.sig;
+    D = { T, off: offList, byId: new Map(T.map(t => [t.id, t])), sig };
+
+    // Make sure the selected year exists
+    const years = [...new Set(T.map(t => t.y))];
+    if (!years.includes(yr) && years.length) yr = years.includes(new Date().getFullYear()) ? new Date().getFullYear() : Math.max(...years);
+
+    if (changed || !quiet) { nav(); render(); }
+    const now = new Date();
+    sy("Live ✓ · " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    return true;
+  } catch (e) {
+    console.error("Performance load error:", e);
+    sy("TaskFlow se connect nahi hua", true);
+    if (!D.sig) $("#m").innerHTML = `<div class="c err">Data load nahi ho saka: ${E(e.message || e)}<br><br><button id="retry">Dobara koshish karein</button></div>`;
+    $("#retry")?.addEventListener("click", () => load());
+    return false;
+  }
+}
+
+// ── Year bar + month nav ───────────────────────────────────
+function yearBar() {
+  const years = [...new Set([...D.T.map(t => t.y), new Date().getFullYear()])].sort();
+  $("#yb").innerHTML = years.map(y => {
+    const s = st(D.T.filter(t => t.y === y));
+    return `<button data-y="${y}" class="${y === yr ? "on" : ""}">${y}${s.n ? " · " + s.pc + "%" : ""}</button>`;
+  }).join("");
+  document.querySelectorAll("[data-y]").forEach(b => b.onclick = () => { yr = +b.dataset.y; logLimit = 100; render(); });
+}
+function nav() {
+  $("#nav").innerHTML = [["-1", "Full Year"], ...MN.map((n, i) => [i, n])]
+    .map(([i, n]) => `<button data-i="${i}" class="${+i === cur ? "on" : ""}">${n}</button>`).join("");
+  document.querySelectorAll("#nav button").forEach(b => b.onclick = () => { cur = +b.dataset.i; logLimit = 100; nav(); render(); });
+}
+
+// ── Charts ─────────────────────────────────────────────────
+function ring(p, c, sz = 110) {
+  const r = 42, C = 2 * Math.PI * r;
+  return `<svg viewBox="0 0 110 110" width="${sz}"><circle cx="55" cy="55" r="${r}" fill="none" stroke="var(--bd)" stroke-width="10"/><circle cx="55" cy="55" r="${r}" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 55 55)" style="filter:drop-shadow(0 0 5px ${c})"><animate attributeName="stroke-dashoffset" to="${C * (1 - p / 100)}" dur="1.3s" fill="freeze" calcMode="spline" keySplines=".2 .8 .2 1" keyTimes="0;1"/></circle><text x="55" y="61" text-anchor="middle" font-size="19" font-weight="700" fill="var(--tx)">${p}%</text></svg>`;
+}
+
+function render() {
+  yearBar();
+  // keep what the user was typing in the Add-Task row
+  const keep = { at: $("#at")?.value || "", ao: $("#ao")?.value, am: $("#am")?.value };
+
+  const L = sel(), A = st(L), ml = cur < 0 ? "Full Year " + yr : MN[cur] + " " + yr;
+  $("#ttl").innerHTML = 'Team <span>Performance</span>';
+  $("#sub").textContent = "Six-B Food Industries (Pvt.) Ltd. · " + yr + " · Live from TaskFlow";
+
+  const overdue = L.filter(isOverdue).length;
+  const kp = (l, v, ac) => `<div class="c kc" style="--ac:${ac}"><div class="k">${l}</div><div class="v" data-c="${v}">0</div></div>`;
+  let h = `<div class="g">${kp("Total Tasks · " + ml, A.n, "var(--o)")}${kp("Completed", A.d, "var(--g)")}${kp("In Progress", A.p, "var(--b)")}${kp("Pending", A.w, "var(--y)")}${kp("Overdue", overdue, "#ef4444")}</div>`;
+
+  const rk = D.off.map(o => ({ ...o, ...st(L.filter(t => t.o === o.id)) })).sort((a, b) => b.pc - a.pc || b.d - a.d);
+
+  // Department score + officer rings
+  h += `<div class="row"><div class="c"><h3>Department Score · ${ml} <span class="s">(Employee-wise)</span></h3><div style="text-align:center">${ring(A.pc, "url(#gr)", 170)}<svg width="0" height="0"><defs><linearGradient id="gr"><stop offset="0" stop-color="#f47a20"/><stop offset="1" stop-color="#8cc63f"/></linearGradient></defs></svg></div>
+<div class="rings" style="margin-top:12px">${rk.map(r => `<div>${ring(r.pc, r.pc >= 75 ? "var(--g)" : r.pc >= 50 ? "var(--y)" : "var(--o)", 90)}<div class="n">${E(r.name)}<br><span class="s">${r.d}/${r.n} done</span></div></div>`).join("") || '<div class="s">Koi employee nahi mila.</div>'}</div></div>`;
+
+  // Performance galaxy
+  const n = Math.max(rk.length, 1), cx = 200;
+  const pl = rk.map((r, i) => {
+    const rad = 70 + i * (115 / n), ang = (i * 137) % 360, c = r.pc >= 75 ? "#8cc63f" : r.pc >= 50 ? "#fbbf24" : "#f47a20", sz = 6 + r.pc / 11;
+    return `<circle cx="${cx}" cy="${cx}" r="${rad}" fill="none" stroke="var(--bd)" stroke-dasharray="3 6"/><g><animateTransform attributeName="transform" type="rotate" from="${ang} ${cx} ${cx}" to="${ang + 360} ${cx} ${cx}" dur="${26 + i * 9}s" repeatCount="indefinite"/><circle cx="${cx + rad}" cy="${cx}" r="${sz}" fill="${c}" style="filter:drop-shadow(0 0 8px ${c})"/></g>`;
+  }).join("");
+  h += `<div class="c"><h3>Performance Galaxy · ${ml} <span class="s">(employee-wise)</span></h3><svg viewBox="0 0 400 400" width="100%" style="max-width:380px;display:block;margin:auto"><defs><radialGradient id="co"><stop offset="0" stop-color="#ffb066"/><stop offset=".6" stop-color="#f47a20"/><stop offset="1" stop-color="#8cc63f"/></radialGradient></defs>${pl}<circle cx="${cx}" cy="${cx}" r="46" fill="url(#co)" style="filter:drop-shadow(0 0 18px #f47a20)"><animate attributeName="r" values="44;48;44" dur="3s" repeatCount="indefinite"/></circle><text x="${cx}" y="${cx + 8}" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">${A.pc}%</text></svg>
+<div class="lg" style="text-align:center">Center = poori team · Har sitara = ek employee · Bara sitara = behtar performance, andar wali orbit = top rank</div>
+<div class="lg" style="text-align:center">${rk.map((r, i) => `${i + 1}. ${E(r.name)} <b>${r.pc}%</b>`).join(" &nbsp;·&nbsp; ")}</div></div></div>`;
+
+  // Month-wise score
+  h += `<div class="c" style="margin-bottom:14px"><h3>Month-wise Score</h3><div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center">${MN.map((nm, m) => {
+    const s = st(Y().filter(t => t.m === m)), p = s.n ? s.pc : 0;
+    return `<div data-mb="${m}" style="cursor:pointer;text-align:center;opacity:${cur < 0 || cur === m ? 1 : .5}"><div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(#f47a20,#8cc63f ${p}%,var(--bd) 0);display:grid;place-items:center;box-shadow:0 8px 20px var(--sh)"><div style="width:46px;height:46px;border-radius:50%;background:var(--bg2);display:grid;place-items:center;font-weight:700;font-size:13px">${s.n ? p + "%" : "–"}</div></div><div class="s" style="margin-top:4px">${nm}</div></div>`;
+  }).join("")}</div></div>`;
+
+  // Task log
+  const lg = L.filter(t => (fo === "All" || t.o === fo) && (fst === "All" || t.s === fst) &&
+    (fsrc === "All" || (fsrc === "self" ? t.self : !t.self)));
+  const shown = lg.slice(0, logLimit);
+  const opt = (arr, selId) => arr.map(o => `<option value="${E(o.id)}" ${o.id === selId ? "selected" : ""}>${E(o.name)}</option>`).join("");
+
+  h += `<div class="c"><h3>Task Log · ${ml}</h3>
+<div class="add"><span class="s">Filter:</span>
+<select id="fo"><option value="All">All employees</option>${opt(D.off, fo)}</select>
+<select id="fst"><option value="All">All statuses</option>${ST.map(s => `<option ${s === fst ? "selected" : ""}>${s}</option>`).join("")}</select>
+<select id="fsrc"><option value="All">All sources</option><option value="asg" ${fsrc === "asg" ? "selected" : ""}>Assigned</option><option value="self" ${fsrc === "self" ? "selected" : ""}>Self-added</option></select></div>
+<div class="add"><select id="ao">${opt(D.off, "")}</select>
+<select id="am">${MN.map((nm, i) => `<option value="${i}" ${i === (cur < 0 ? new Date().getMonth() : cur) ? "selected" : ""}>${nm}</option>`).join("")}</select>
+<input id="at" maxlength="150" placeholder="Task likhein"><button class="pri" id="ab">+ Add Task</button></div>
+<div class="sc"><table><tr><th>Month</th><th>Employee</th><th style="min-width:240px">Task</th><th>Source</th><th>Deadline</th><th>Status</th></tr>${
+  shown.map(t => `<tr><td>${MN[t.m]}</td><td>${E(t.on)}</td>
+<td style="white-space:normal;min-width:240px"><div class="td">${E(t.title)}</div>${t.desc ? `<div class="tds">${E(t.desc)}</div>` : ""}</td>
+<td><span class="src ${t.self ? "self" : "asg"}">${t.self ? "Self-added" : (t.o ? "Assigned" : "Unassigned")}</span></td>
+<td class="dl ${isOverdue(t) ? "warn" : ""}">${t.deadline ? fmtDate(t.deadline) + (isOverdue(t) ? " · overdue" : "") : "—"}</td>
+<td><select data-sid="${E(t.id)}" style="color:${SC[t.s]}">${ST.map(s => `<option ${s === t.s ? "selected" : ""}>${s}</option>`).join("")}</select></td></tr>`).join("")
+  || '<tr><td colspan="6">Is selection mein koi task nahi.</td></tr>'}</table></div>
+${lg.length > shown.length ? `<button class="more" id="more">Aur dikhayein (${lg.length - shown.length} baqi)</button>` : ""}</div>`;
+
+  $("#m").innerHTML = h;
+
+  // restore Add-Task inputs
+  if ($("#at")) $("#at").value = keep.at;
+  if (keep.ao && $("#ao") && [...$("#ao").options].some(o => o.value === keep.ao)) $("#ao").value = keep.ao;
+  if (keep.am != null && $("#am")) $("#am").value = keep.am;
+
+  // KPI count-up + 3D tilt
+  document.querySelectorAll("[data-c]").forEach(e => {
+    const t = +e.dataset.c, s = performance.now();
+    (function f(now) { const k = Math.min(1, (now - s) / 1000); e.textContent = Math.round(t * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); })(s);
+  });
+  document.querySelectorAll(".g .c").forEach((c, i) => {
+    c.style.animationDelay = i * 70 + "ms";
+    c.onmousemove = e => { const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; c.style.transform = `rotateY(${x * 12}deg) rotateX(${-y * 12}deg) translateZ(8px)`; };
+    c.onmouseleave = () => c.style.transform = "";
+  });
+
+  // interactions
+  document.querySelectorAll("[data-mb]").forEach(e => e.onclick = () => { cur = cur === +e.dataset.mb ? -1 : +e.dataset.mb; logLimit = 100; nav(); render(); });
+  $("#fo").onchange   = e => { fo = e.target.value;   logLimit = 100; render(); };
+  $("#fst").onchange  = e => { fst = e.target.value;  logLimit = 100; render(); };
+  $("#fsrc").onchange = e => { fsrc = e.target.value; logLimit = 100; render(); };
+  $("#more")?.addEventListener("click", () => { logLimit += 200; render(); });
+  $("#ab").onclick = addTask;
+  $("#at").addEventListener("keydown", e => { if (e.key === "Enter") addTask(); });
+  document.querySelectorAll("[data-sid]").forEach(e => e.onchange = () => changeStatus(e));
+}
+
+// ── Write-back: change status ──────────────────────────────
+async function changeStatus(selEl) {
+  const t = D.byId.get(selEl.dataset.sid);
+  if (!t) return;
+  const prev = t.s, next = selEl.value;
+  if (prev === next) return;
+  selEl.disabled = true; busy = true;
+  const { error } = await supabase.from("tasks").update({ status: UI2DB[next] }).eq("id", t.id);
+  busy = false;
+  if (error) { toast(error.message, true); selEl.value = prev; selEl.disabled = false; return; }
+  t.s = next;
+  D.sig = D.T.map(x => x.id + x.s + x.o + x.title).join("|") + "#" + D.off.map(o => o.id + o.name).join("|");
+  toast("Status updated.");
+  render();
+}
+
+// ── Write-back: add task for an employee ───────────────────
+async function addTask() {
+  const btn = $("#ab");
+  if (!btn || btn.disabled) return;
+  const title = $("#at").value.trim(), assignee = $("#ao").value, m = +$("#am").value;
+  if (!assignee) { toast("Pehle employee select karein.", true); return; }
+  if (!title)    { toast("Task likhein.", true); return; }
+  if (title.length > 150) { toast("Title bohat lamba hai (max 150).", true); return; }
+
+  btn.disabled = true; busy = true;
+  try {
+    const row = { title, assigned_to: assignee, assigned_by: user.id, status: "pending" };
+    const now = new Date();
+    if (yr !== now.getFullYear() || m !== now.getMonth()) row.created_at = new Date(yr, m, 15, 12, 0, 0).toISOString();
+    const { error } = await supabase.from("tasks").insert(row);
+    if (error) throw error;
+
+    if (assignee !== user.id) {
+      await supabase.from("notifications").insert({
+        user_id: assignee, message: `You've been assigned a new task: "${title}"`, is_read: false
+      });
+    }
+    $("#at").value = "";
+    toast("Task add ho gaya.");
+    busy = false;
+    await load();
+  } catch (e) {
+    toast(e?.message || "Task add nahi ho saka.", true);
+  } finally {
+    busy = false;
+    const b = $("#ab"); if (b) b.disabled = false;
+  }
+}
+
+// ── Theme ──────────────────────────────────────────────────
+try { const t = localStorage.getItem("tf_perf_theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("#th").onclick = () => {
+  const r = document.documentElement, dark = getComputedStyle(r).getPropertyValue("--bg").trim() === "#0a0f1d";
+  r.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("tf_perf_theme", r.dataset.theme); } catch (e) {}
+};
+
+// ── Boot + live refresh ────────────────────────────────────
+await load();
+function poll() {
+  if (document.hidden || busy) return;
+  const a = document.activeElement;
+  if (a && a.tagName === "INPUT") return;           // don't disturb typing
+  load(true);
+}
+setInterval(poll, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+window.addEventListener("focus", poll);
+// New notification for me (e.g. an employee added a task) → refresh immediately
+supabase.channel(`perf-${user.id}`)
+  .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => poll())
+  .subscribe();
+</script>
+</body></html>
