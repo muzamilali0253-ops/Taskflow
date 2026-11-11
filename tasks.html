@@ -94,9 +94,27 @@
           <select id="filterAssignee" style="width:160px;padding:10px 12px;display:none">
             <option value="">All employees</option>
           </select>
+          <select id="filterMonth" style="width:130px;padding:10px 12px" title="Month">
+            <option value="">All months</option>
+            <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+            <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+            <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+          </select>
+          <select id="filterYear" style="width:110px;padding:10px 12px" title="Year">
+            <option value="">All years</option>
+          </select>
+          <select id="dateBasis" style="width:150px;padding:10px 12px" title="Month is based on">
+            <option value="created">By created date</option>
+            <option value="deadline">By deadline</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:500;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="groupMonth" checked style="width:auto" /> Group by month
+          </label>
+          <button type="button" class="btn btn-outline btn-sm" id="clearFilters">Clear</button>
         </div>
         <div>
-          <button class="btn btn-primary hidden" id="newTaskBtn" onclick="openModal()">
+          <button class="btn btn-primary" id="newTaskBtn" onclick="openModal()">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
             New Task
           </button>
@@ -137,9 +155,6 @@
   initMobileMenu();
   initNotifPopup(user);
 
-  // Show new-task button for admin/manager
-  if (user.role !== "employee") document.getElementById("newTaskBtn").classList.remove("hidden");
-
   // Pre-populate assignees in modal
   if (user.role !== "employee") {
     const { data: employees } = await supabase.from("users").select("id,name").in("role", ["employee","manager"]);
@@ -172,7 +187,34 @@
     window.allTasks = data || [];
     window._taskMap = {};
     window.allTasks.forEach(t => { window._taskMap[t.id] = t; });
-    renderTasks(window.allTasks);
+    populateYears();
+    applyFilters();
+  }
+
+  // ── Month / year helpers ───────────────────────────────────
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  // Returns {y, m} (m = 0-11) for a task, or null (e.g. no deadline)
+  function taskMonth(t) {
+    const basis = document.getElementById("dateBasis").value;
+    if (basis === "deadline") {
+      if (!t.deadline) return null;
+      const [y, m] = t.deadline.split("-").map(Number);   // DATE string, avoid timezone shifts
+      return { y, m: m - 1 };
+    }
+    const d = new Date(t.created_at);
+    return { y: d.getFullYear(), m: d.getMonth() };
+  }
+
+  function populateYears() {
+    const sel  = document.getElementById("filterYear");
+    const keep = sel.value;
+    const years = new Set();
+    window.allTasks.forEach(t => { const k = taskMonth(t); if (k) years.add(k.y); });
+    years.add(new Date().getFullYear());
+    sel.innerHTML = `<option value="">All years</option>` +
+      [...years].sort((a, b) => b - a).map(y => `<option value="${y}">${y}</option>`).join("");
+    sel.value = [...years].map(String).includes(keep) ? keep : "";
   }
 
   function renderTasks(tasks) {
@@ -182,10 +224,12 @@
       return;
     }
 
-    tbody.innerHTML = tasks.map(t => `
+    const rowHtml = t => `
       <tr>
         <td>
-          <div style="font-weight:600;color:var(--gray-900)">${t.title}</div>
+          <div style="font-weight:600;color:var(--gray-900)">${escapeHtml(t.title)}
+            ${t.assigned_by?.id && t.assigned_by.id === t.assigned_to?.id ? `<span class="badge badge-employee" style="margin-left:6px;font-size:10px">Self-added</span>` : ""}
+          </div>
           ${t.description ? `<div style="font-size:12px;color:var(--gray-500);margin-top:4px;max-width:400px;line-height:1.4;word-wrap:break-word;white-space:pre-wrap">${escapeHtml(t.description)}</div>` : ""}
         </td>
         <td>
@@ -208,8 +252,36 @@
             ` : ""}
           </div>
         </td>
-      </tr>
-    `).join("");
+      </tr>`;
+
+    if (!document.getElementById("groupMonth").checked) {
+      tbody.innerHTML = tasks.map(rowHtml).join("");
+      return;
+    }
+
+    // Group by month (newest month first)
+    const groups = new Map();
+    tasks.forEach(t => {
+      const k = taskMonth(t);
+      const key = k ? `${k.y}-${String(k.m).padStart(2, "0")}` : "none";
+      if (!groups.has(key)) groups.set(key, { label: k ? `${MONTHS[k.m]} ${k.y}` : "No deadline", items: [] });
+      groups.get(key).items.push(t);
+    });
+    const keys = [...groups.keys()].sort((a, b) => a === "none" ? 1 : b === "none" ? -1 : b.localeCompare(a));
+
+    tbody.innerHTML = keys.map(key => {
+      const g = groups.get(key);
+      const done = g.items.filter(t => t.status === "completed").length;
+      return `
+        <tr>
+          <td colspan="5" style="background:var(--gray-50);padding:10px 16px;font-weight:700;color:var(--gray-800)">
+            ${g.label}
+            <span style="font-weight:500;font-size:12px;color:var(--gray-500);margin-left:8px">
+              ${g.items.length} task${g.items.length === 1 ? "" : "s"} · ${done} completed
+            </span>
+          </td>
+        </tr>${g.items.map(rowHtml).join("")}`;
+    }).join("");
   }
 
   // HTML escape function for security
@@ -229,16 +301,31 @@
     const q   = document.getElementById("searchInput").value.toLowerCase();
     const st  = document.getElementById("filterStatus").value;
     const assignee = document.getElementById("filterAssignee").value;
-    const filtered = window.allTasks.filter(t =>
-      (!q  || t.title.toLowerCase().includes(q) || (t.description||"").toLowerCase().includes(q)) &&
-      (!st || t.status === st) &&
-      (!assignee || t.assigned_to?.id === assignee)
-    );
+    const month = document.getElementById("filterMonth").value;
+    const year  = document.getElementById("filterYear").value;
+    const filtered = window.allTasks.filter(t => {
+      if (q && !(t.title.toLowerCase().includes(q) || (t.description||"").toLowerCase().includes(q))) return false;
+      if (st && t.status !== st) return false;
+      if (assignee && t.assigned_to?.id !== assignee) return false;
+      if (month !== "" || year !== "") {
+        const k = taskMonth(t);
+        if (!k) return false;
+        if (month !== "" && k.m !== Number(month)) return false;
+        if (year  !== "" && k.y !== Number(year))  return false;
+      }
+      return true;
+    });
     renderTasks(filtered);
   }
   document.getElementById("searchInput").addEventListener("input", applyFilters);
-  document.getElementById("filterStatus").addEventListener("change", applyFilters);
-  document.getElementById("filterAssignee").addEventListener("change", applyFilters);
+  ["filterStatus","filterAssignee","filterMonth","filterYear","groupMonth"].forEach(id =>
+    document.getElementById(id).addEventListener("change", applyFilters));
+  document.getElementById("dateBasis").addEventListener("change", () => { populateYears(); applyFilters(); });
+  document.getElementById("clearFilters").addEventListener("click", () => {
+    document.getElementById("searchInput").value = "";
+    ["filterStatus","filterAssignee","filterMonth","filterYear"].forEach(id => document.getElementById(id).value = "");
+    applyFilters();
+  });
 
   // ── Modal helpers ──────────────────────────────────────────
   window.openModal  = (task = null) => {
@@ -250,7 +337,8 @@
     document.getElementById("taskStatus").value   = task?.status || "pending";
     document.getElementById("statusGroup").style.display = task ? "" : "none";
     document.getElementById("modalTitle").textContent   = task ? "Edit Task" : "New Task";
-    document.getElementById("modalSubtitle").textContent = task ? "Update task details" : "Fill in the details below";
+    document.getElementById("modalSubtitle").textContent = task ? "Update task details"
+      : (user.role === "employee" ? "This task will be added to your list and your manager will be notified" : "Fill in the details below");
     document.getElementById("taskModal").classList.add("open");
   };
   window.closeModal = () => document.getElementById("taskModal").classList.remove("open");
@@ -277,15 +365,21 @@
     } else {
       payload.assigned_by = user.id;
       payload.status = "pending";
+      if (user.role === "employee") payload.assigned_to = user.id;   // employee adds task for themselves
       ({ error: err } = await supabase.from("tasks").insert(payload));
 
-      // Notify assigned user + show popup to them via realtime
-      if (payload.assigned_to) {
-        await supabase.from("notifications").insert({
-          user_id: payload.assigned_to,
-          message: `You've been assigned a new task: "${payload.title}"`,
-          is_read: false
-        });
+      if (!err) {
+        if (user.role === "employee") {
+          // Notify all managers that an employee added a task
+          await notifyManagers(`${user.name} added a new task: "${payload.title}"`);
+        } else if (payload.assigned_to && payload.assigned_to !== user.id) {
+          // Notify assigned user + show popup to them via realtime
+          await supabase.from("notifications").insert({
+            user_id: payload.assigned_to,
+            message: `You've been assigned a new task: "${payload.title}"`,
+            is_read: false
+          });
+        }
       }
     }
 
@@ -305,16 +399,25 @@
   };
 
   // ── Change status (employee) ───────────────────────────────
+  // Send a notification to every manager (employee-initiated events)
+  async function notifyManagers(message) {
+    const { data: managers } = await supabase.from("users").select("id").eq("role", "manager");
+    if (!managers?.length) return;
+    await supabase.from("notifications").insert(
+      managers.map(m => ({ user_id: m.id, message, is_read: false }))
+    );
+  }
+
   window.changeStatus = async (id, status) => {
     await supabase.from("tasks").update({ status }).eq("id", id);
-    // Notify assigner
     const { data: t } = await supabase.from("tasks").select("title, assigned_by").eq("id", id).single();
-    if (t?.assigned_by) {
-      await supabase.from("notifications").insert({
-        user_id: t.assigned_by,
-        message: `Task "${t.title}" status changed to ${status.replace("_", " ")}`,
-        is_read: false
-      });
+    const msg = `${user.name} changed task "${t?.title}" to ${status.replace("_", " ")}`;
+    if (t?.assigned_by && t.assigned_by !== user.id) {
+      // Task was assigned by a manager/admin → notify them
+      await supabase.from("notifications").insert({ user_id: t.assigned_by, message: msg, is_read: false });
+    } else {
+      // Self-added task → notify managers
+      await notifyManagers(msg);
     }
     toast("Status updated.");
   };
