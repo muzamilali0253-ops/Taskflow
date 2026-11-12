@@ -24,6 +24,11 @@
         <label>Description</label>
         <textarea id="taskDesc" placeholder="Optional details…"></textarea>
       </div>
+      <div class="form-group" id="functionGroup" style="display:none">
+        <label>HR Function / Category <span style="color:var(--gray-400);font-weight:400">(Performance Dashboard ke liye, optional)</span></label>
+        <input type="text" id="taskFunction" list="functionList" placeholder="e.g. Recruitment &amp; Talent Acquisition" />
+        <datalist id="functionList"></datalist>
+      </div>
       <div class="form-group" id="assigneeGroup">
         <label>Assign to</label>
         <select id="taskAssignee"><option value="">— Unassigned —</option></select>
@@ -155,6 +160,20 @@
   initMobileMenu();
   initNotifPopup(user);
 
+  // Performance Dashboard "function" column (SQL migration chali ho to hi dikhega)
+  let HAS_FN = false;
+  {
+    const { error } = await supabase.from("tasks").select("function_name").limit(1);
+    HAS_FN = !error;
+    if (HAS_FN) document.getElementById("functionGroup").style.display = "";
+  }
+  const DEFAULT_FUNCTIONS = ["Recruitment & Talent Acquisition","Sales Team Payroll and Reports","Job Description & Organization Structure Management","Asset Management","Employee Benefits & Welfare","HR Systems & Digitalization","HR Policies & Procedures","Attendance & Time Management","HR Administration & General Support","Sales Team Verfications","Employee Engagement","Employee Records & HR Documentation","HR Analytics & Reporting","Health, Safety & Employee Welfare Coordination","Internship & Graduate Programs","Sales Team Addition & Deletion in SAP & Payroll","Compensation & Benefits Management","Employee Exit & Separation","Employee Relations","Learning & Development (L&D)","Leave Management","Payroll & Compensation Administration","Sales Manager Attendance","Sales Team Expense Management","Sales Team queires"];
+  function fillFunctionList() {
+    if (!HAS_FN) return;
+    const all = [...new Set([...DEFAULT_FUNCTIONS, ...window.allTasks.map(t => t.function_name).filter(Boolean)])].sort();
+    document.getElementById("functionList").innerHTML = all.map(f => `<option value="${f.replace(/"/g, "&quot;")}">`).join("");
+  }
+
   // Pre-populate assignees in modal
   if (user.role !== "employee") {
     const { data: employees } = await supabase.from("users").select("id,name").in("role", ["employee","manager"]);
@@ -178,7 +197,7 @@
 
   async function loadTasks() {
     let query = supabase.from("tasks")
-      .select("id, title, description, status, deadline, created_at, assigned_to(id,name), assigned_by(id,name)")
+      .select("id, title, description, status, deadline, created_at, assigned_to(id,name), assigned_by(id,name)" + (HAS_FN ? ", function_name" : ""))
       .order("created_at", { ascending: false });
 
     if (user.role === "employee") query = query.eq("assigned_to", user.id);
@@ -188,6 +207,7 @@
     window._taskMap = {};
     window.allTasks.forEach(t => { window._taskMap[t.id] = t; });
     populateYears();
+    fillFunctionList();
     applyFilters();
   }
 
@@ -230,6 +250,7 @@
           <div style="font-weight:600;color:var(--gray-900)">${escapeHtml(t.title)}
             ${t.assigned_by?.id && t.assigned_by.id === t.assigned_to?.id ? `<span class="badge badge-employee" style="margin-left:6px;font-size:10px">Self-added</span>` : ""}
           </div>
+          ${t.function_name ? `<div style="margin-top:4px"><span class="badge badge-employee" style="font-size:10px">${escapeHtml(t.function_name)}</span></div>` : ""}
           ${t.description ? `<div style="font-size:12px;color:var(--gray-500);margin-top:4px;max-width:400px;line-height:1.4;word-wrap:break-word;white-space:pre-wrap">${escapeHtml(t.description)}</div>` : ""}
         </td>
         <td>
@@ -332,6 +353,7 @@
     document.getElementById("taskId").value       = task?.id || "";
     document.getElementById("taskTitle").value    = task?.title || "";
     document.getElementById("taskDesc").value     = task?.description || "";
+    document.getElementById("taskFunction").value = task?.function_name || "";
     document.getElementById("taskAssignee").value = task?.assigned_to?.id || "";
     document.getElementById("taskDeadline").value = task?.deadline || "";
     document.getElementById("taskStatus").value   = task?.status || "pending";
@@ -358,6 +380,8 @@
       deadline:    document.getElementById("taskDeadline").value || null,
       status:      document.getElementById("taskStatus").value,
     };
+
+    if (HAS_FN) payload.function_name = document.getElementById("taskFunction").value.trim() || null;
 
     let err;
     if (id) {
