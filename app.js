@@ -13,10 +13,8 @@ export function toast(msg, type = "success") {
   setTimeout(() => el.remove(), 3500);
 }
 
-export function escapeHtml(text) {
-  return String(text ?? "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function escapeText(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 export function formatDate(iso) {
@@ -93,7 +91,7 @@ export async function getCurrentUser() {
 
 export async function requireAuth(allowedRoles = null) {
   const user = await getCurrentUser();
-  if (!user) { window.location.href = "/index.html"; return null; }
+  if (!user) { window.location.href = "index.html"; return null; }
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     redirectByRole(user.role);
     return null;
@@ -102,9 +100,9 @@ export async function requireAuth(allowedRoles = null) {
 }
 
 export function redirectByRole(role) {
-  if (role === "admin") window.location.href = "/dashboard.html";
-  else if (role === "manager") window.location.href = "/dashboard.html";
-  else window.location.href = "/dashboard.html";
+  if (role === "admin") window.location.href = "dashboard.html";
+  else if (role === "manager") window.location.href = "dashboard.html";
+  else window.location.href = "dashboard.html";
 }
 
 // ────────────────────────────────────────────────────────────
@@ -174,7 +172,7 @@ export function buildSidebar(user, activePage) {
 
   document.getElementById("logoutBtn")?.addEventListener("click", async () => {
     await supabase.auth.signOut();
-    window.location.href = "/index.html";
+    window.location.href = "index.html";
   });
 
   loadNotifBadge(user.id);
@@ -240,7 +238,7 @@ export function showNotifPopup(message, type = "notification") {
     </div>
     <div class="notif-popup-body">
       <div class="notif-popup-title">${type === "message" ? "New Message" : "Notification"}</div>
-      <div class="notif-popup-text">${message}</div>
+      <div class="notif-popup-text">${escapeText(message)}</div>
     </div>
     <button class="notif-popup-close" onclick="this.parentElement.remove()">×</button>
   `;
@@ -274,4 +272,4 @@ function groupChatIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill=
 function bellIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>`; }
 function reportIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`; }
 function logoutIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>`; }
-function perfIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>`; }
+function perfIcon() { return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>`; }
